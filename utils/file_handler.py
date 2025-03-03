@@ -1,30 +1,18 @@
 import pandas as pd
 
 def load_data(file):
+    """Carrega um CSV com encoding correto e tratamento de separadores."""
     try:
-        # Tenta detectar a codificação
-        encoding = "utf-8"
+        file.seek(0)  # Retorna ao início do arquivo
         
-        # Lê o CSV tratando erros de quebra de linha e delimitador
-        return pd.read_csv(file, encoding=encoding, sep=None, engine="python", on_bad_lines="skip")
-    
-    except pd.errors.ParserError as e:
-        print(f"Erro ao processar o arquivo CSV: {e}")
-        return None
-
-    except UnicodeDecodeError:
-        print("Erro de codificação. Tentando com 'latin1'...")
-        return pd.read_csv(file, encoding="latin1", sep=None, engine="python", on_bad_lines="skip")
+        return pd.read_csv(
+            file, 
+            encoding="ISO-8859-1",  # Corrige caracteres especiais
+            sep=";",  # Usa ponto e vírgula como separador
+            quotechar='"',  # Garante que textos entre aspas sejam lidos corretamente
+            low_memory=False,  # Evita problemas com arquivos grandes
+            dtype=str  # Mantém os dados como string para evitar erros de conversão
+        )
 
     except Exception as e:
-        print(f"Erro inesperado: {e}")
-        return None
-
-def save_data(df, filename="output.csv"):
-    """Salva um DataFrame em um arquivo CSV."""
-    try:
-        df.to_csv(filename, index=False, encoding="utf-8")
-        print(f"Arquivo salvo como {filename}")
-    except Exception as e:
-        print(f"Erro ao salvar o arquivo: {e}")
-
+        raise Exception(f"Erro ao carregar arquivo: {e}")
