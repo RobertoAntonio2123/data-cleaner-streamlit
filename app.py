@@ -1,26 +1,52 @@
 import streamlit as st
 import pandas as pd
+from utils.data_processing import remove_duplicates, handle_missing_values, merge_tables
+from utils.file_handler import load_data, save_data
+from utils.table_comparator import compare_tables
 
-def carregar_arquivo(uploaded_file):
-    """Carrega um arquivo CSV ou Parquet e retorna um DataFrame."""
-    if uploaded_file is not None:
-        if uploaded_file.name.endswith(".csv"):
-            return pd.read_csv(uploaded_file)
-        elif uploaded_file.name.endswith(".parquet"):
-            return pd.read_parquet(uploaded_file)
-        else:
-            st.error("Formato de arquivo não suportado. Envie um CSV ou Parquet.")
-    return None
+def main():
+    st.title("Streamlit Data Cleaner")
+    
+    st.sidebar.header("Upload de Arquivos")
+    uploaded_file1 = st.sidebar.file_uploader("Escolha o primeiro arquivo CSV ou Parquet", type=["csv", "parquet"])
+    uploaded_file2 = st.sidebar.file_uploader("Escolha o segundo arquivo para comparação (opcional)", type=["csv", "parquet"])
+    
+    uploaded_file = st.file_uploader("Escolha um arquivo CSV", type=["csv"])
 
-# Configuração inicial do Streamlit
-st.title("Data Cleaner & Analyzer")
-st.write("Envie seu arquivo para análise de dados, limpeza e comparação.")
 
-# Upload de arquivo
-uploaded_file = st.file_uploader("Envie um arquivo CSV ou Parquet", type=["csv", "parquet"])
+    if uploaded_file1:
+        df1 = load_data(uploaded_file1)
+        st.write("### Dados Carregados")
+        st.dataframe(df1.head())
 
-df = carregar_arquivo(uploaded_file)
+        if uploaded_file is not None:
+            df = pd.read_csv(uploaded_file)
+            st.write(df.head())
 
-if df is not None:
-    st.write("## Visualização dos Dados")
-    st.dataframe(df.head())
+
+        
+        # Opções de limpeza
+        if st.sidebar.button("Remover Duplicatas"):
+            df1 = remove_duplicates(df1)
+            st.write("### Dados sem duplicatas")
+            st.dataframe(df1.head())
+        
+        if st.sidebar.button("Preencher Valores Nulos com Média"):
+            df1 = handle_missing_values(df1, strategy='mean')
+            st.write("### Dados sem valores nulos")
+            st.dataframe(df1.head())
+        
+        if uploaded_file2:
+            df2 = load_data(uploaded_file2)
+            comparison = compare_tables(df1, df2)
+            st.write("### Comparação entre Tabelas")
+            st.json(comparison)
+        
+        # Opção de exportação
+        save_format = st.sidebar.selectbox("Escolha o formato para salvar", ["CSV", "Parquet"])
+        if st.sidebar.button("Salvar Arquivo"):
+            save_data(df1, save_format)
+            st.success(f"Arquivo salvo como {save_format.lower()}")
+
+if __name__ == "__main__":
+    main()
